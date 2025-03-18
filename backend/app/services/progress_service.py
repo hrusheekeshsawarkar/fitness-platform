@@ -5,6 +5,7 @@ from fastapi import HTTPException, status
 from app.db.mongodb import get_database
 from app.models.progress import ProgressCreate, ProgressUpdate, Progress
 from app.services.event_service import EventService
+from app.services.user_service import UserService
 
 class ProgressService:
     """Service for progress operations."""
@@ -16,14 +17,24 @@ class ProgressService:
         """Create a new progress entry."""
         db = get_database()
         
+        # Ensure user_id is set
+        if not progress.user_id:
+            raise HTTPException(status_code=400, detail="User ID is required")
+        
+        # Get the user to find their Firebase UID
+        user = await UserService.get_user(progress.user_id)
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
+        
         # Check if event exists
         event = await EventService.get_event(progress.event_id)
         if not event:
             raise HTTPException(status_code=404, detail="Event not found")
         
-        # Check if user is registered for the event
-        if progress.user_id not in event.participants:
-            raise HTTPException(status_code=400, detail="User is not registered for this event")
+        # Check if user is registered for the event - comparing Firebase UID
+        # Events store Firebase UIDs as participants, not MongoDB ObjectIDs
+        if user.firebase_uid not in event.participants:
+            raise HTTPException(status_code=400, detail=f"User is not registered for this event. Firebase UID {user.firebase_uid} not found in participants: {event.participants}")
         
         progress_dict = progress.dict()
         progress_dict["created_at"] = datetime.utcnow()

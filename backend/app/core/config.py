@@ -4,7 +4,7 @@ from pydantic_settings import BaseSettings
 class Settings(BaseSettings):
     """Application settings."""
     API_V1_STR: str = "/api/v1"
-    PROJECT_NAME: str = "Fitness Platform API"
+    PROJECT_NAME: str = "Run2Rejuvenate API"
     
     # MongoDB settings
     MONGODB_URI: str = os.getenv("MONGODB_URI", "mongodb://localhost:27017/fitness")

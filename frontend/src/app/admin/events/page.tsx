@@ -91,7 +91,7 @@ export default function AdminEventsPage() {
   }
 
   return (
-    <div className="container py-10">
+    <div>
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-bold">Manage Events</h1>
         <Link href="/admin/events/create">

@@ -64,15 +64,15 @@ export default function Home() {
   }, []);
 
   return (
-    <div className="container py-10">
+    <div className="py-10">
       {/* Welcome Section */}
-      <section className="text-center mb-16">
-        <h1 className="text-4xl font-bold mb-4">Welcome to Fitness Platform</h1>
-        <p className="text-xl text-muted-foreground mb-8">
+      <section className="text-center mb-16 px-4">
+        <h1 className="text-4xl font-bold mb-4">Welcome to Run2Rejuvenate</h1>
+        <p className="text-xl text-muted-foreground mb-8 max-w-3xl mx-auto">
           Join fitness events, compete with others, and track your progress to
           achieve your fitness goals.
         </p>
-        <div className="flex justify-center gap-4">
+        <div className="flex flex-wrap justify-center gap-4">
           <Link href="/events">
             <Button size="lg">Browse Events</Button>
           </Link>
@@ -87,8 +87,8 @@ export default function Home() {
       {/* How It Works Section */}
       <section className="mb-16">
         <h2 className="text-3xl font-bold text-center mb-8">How It Works</h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          <Card>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-8 px-2">
+          <Card className="h-full">
             <CardHeader>
               <CardTitle>1. Find Events</CardTitle>
             </CardHeader>
@@ -99,7 +99,7 @@ export default function Home() {
               </p>
             </CardContent>
           </Card>
-          <Card>
+          <Card className="h-full">
             <CardHeader>
               <CardTitle>2. Register</CardTitle>
             </CardHeader>
@@ -109,7 +109,7 @@ export default function Home() {
               </p>
             </CardContent>
           </Card>
-          <Card>
+          <Card className="h-full">
             <CardHeader>
               <CardTitle>3. Compete</CardTitle>
             </CardHeader>
@@ -129,16 +129,16 @@ export default function Home() {
         {loading ? (
           <div className="text-center">Loading events...</div>
         ) : featuredEvents.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8 px-2">
             {featuredEvents.map((event) => (
-              <Card key={event._id}>
+              <Card key={event._id} className="h-full flex flex-col">
                 <CardHeader>
                   <CardTitle>{event.name}</CardTitle>
                   <CardDescription>
                     {event.event_type.charAt(0).toUpperCase() + event.event_type.slice(1)}
                   </CardDescription>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="flex-1">
                   <p className="line-clamp-3">{event.description}</p>
                   <div className="mt-4 text-sm">
                     <p>
@@ -157,8 +157,8 @@ export default function Home() {
                   </div>
                 </CardContent>
                 <CardFooter>
-                  <Link href={`/events/${event._id}`}>
-                    <Button>View Details</Button>
+                  <Link href={`/events/${event._id}`} className="w-full">
+                    <Button className="w-full">View Details</Button>
                   </Link>
                 </CardFooter>
               </Card>

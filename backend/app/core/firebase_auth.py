@@ -1,39 +1,27 @@
-import os
+from typing import Optional
+import logging
+from fastapi import Depends, HTTPException, status
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 import firebase_admin
 from firebase_admin import credentials, auth
-from fastapi import Depends, HTTPException, status, Request
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from .config import settings
-import logging
-from typing import Optional
 
-# Set up logging
-logging.basicConfig(level=logging.INFO)
+# Configure logging
 logger = logging.getLogger(__name__)
 
 # Initialize Firebase Admin SDK
 try:
-    cred_path = settings.FIREBASE_CREDENTIALS_PATH
-    if os.path.exists(cred_path):
-        logger.info(f"Using Firebase credentials from: {cred_path}")
-        cred = credentials.Certificate(cred_path)
-        firebase_admin.initialize_app(cred, {
-            'projectId': settings.FIREBASE_PROJECT_ID,
-        })
-    else:
-        logger.warning(f"Firebase credentials file not found at {cred_path}. Using application default credentials.")
-        # For development without credentials file
-        firebase_admin.initialize_app(options={
-            'projectId': settings.FIREBASE_PROJECT_ID,
-        })
-    logger.info("Firebase Admin SDK initialized successfully")
-except ValueError as e:
-    logger.warning(f"Firebase app already initialized: {str(e)}")
-except Exception as e:
-    logger.error(f"Error initializing Firebase: {str(e)}")
-    raise
+    # Check if the app is already initialized
+    firebase_admin.get_app()
+except ValueError:
+    # If not, initialize with credentials
+    try:
+        cred = credentials.Certificate("firebase-credentials.json")
+        firebase_admin.initialize_app(cred)
+        logger.info("Firebase Admin SDK initialized successfully")
+    except Exception as e:
+        logger.error(f"Error initializing Firebase Admin SDK: {str(e)}")
+        raise
 
-# Security scheme for token authentication
 security = HTTPBearer(auto_error=False)
 
 async def get_current_user(credentials: Optional[HTTPAuthorizationCredentials] = Depends(security)):
@@ -41,6 +29,10 @@ async def get_current_user(credentials: Optional[HTTPAuthorizationCredentials] =
     Verify Firebase ID token and return user information.
     If no token is provided, this will return None.
     """
+    # Import here to avoid circular import
+    from app.models.user import UserCreate
+    from app.services.user_service import UserService
+    
     if not credentials:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -53,11 +45,28 @@ async def get_current_user(credentials: Optional[HTTPAuthorizationCredentials] =
         # Verify the ID token
         decoded_token = auth.verify_id_token(token)
         uid = decoded_token.get("uid")
-        email = decoded_token.get("email")
+        email = decoded_token.get("email", "no-email@example.com")
         
         # Check if user is admin (you can customize this based on your needs)
         # For example, you might have a custom claim in Firebase for admin users
         is_admin = decoded_token.get("admin", False)
+        
+        # Ensure the user exists in our database
+        user_db = await UserService.get_user_by_firebase_uid(uid)
+        if not user_db:
+            # If user doesn't exist, create them
+            new_user = UserCreate(
+                firebase_uid=uid,
+                email=email,
+                full_name=decoded_token.get("name", None),
+                is_admin=is_admin
+            )
+            try:
+                user_db = await UserService.create_user(new_user)
+                logger.info(f"Created new user in database for UID: {uid}")
+            except Exception as e:
+                logger.error(f"Error creating user in database: {str(e)}")
+                # Even if we can't create the user, we still want to allow authentication
         
         return {
             "uid": uid,
@@ -77,6 +86,10 @@ async def get_optional_user(credentials: Optional[HTTPAuthorizationCredentials] 
     Verify Firebase ID token and return user information.
     If no token is provided, this will return None.
     """
+    # Import here to avoid circular import
+    from app.models.user import UserCreate
+    from app.services.user_service import UserService
+    
     if not credentials:
         return None
     
@@ -85,10 +98,27 @@ async def get_optional_user(credentials: Optional[HTTPAuthorizationCredentials] 
         # Verify the ID token
         decoded_token = auth.verify_id_token(token)
         uid = decoded_token.get("uid")
-        email = decoded_token.get("email")
+        email = decoded_token.get("email", "no-email@example.com")
         
         # Check if user is admin
         is_admin = decoded_token.get("admin", False)
+        
+        # Ensure the user exists in our database
+        user_db = await UserService.get_user_by_firebase_uid(uid)
+        if not user_db:
+            # If user doesn't exist, create them
+            new_user = UserCreate(
+                firebase_uid=uid,
+                email=email,
+                full_name=decoded_token.get("name", None),
+                is_admin=is_admin
+            )
+            try:
+                user_db = await UserService.create_user(new_user)
+                logger.info(f"Created new user in database for UID: {uid}")
+            except Exception as e:
+                logger.error(f"Error creating user in database: {str(e)}")
+                # Even if we can't create the user, we still want to allow authentication
         
         return {
             "uid": uid,

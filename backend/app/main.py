@@ -3,6 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import settings
 from app.api.api import api_router
 from app.db.mongodb import connect_to_mongodb, close_mongodb_connection
+import uvicorn
 
 # Create FastAPI app
 app = FastAPI(
@@ -34,9 +35,12 @@ async def shutdown_db_client():
 # Root endpoint
 @app.get("/")
 async def root():
-    return {"message": "Welcome to the Fitness Platform API"}
+    return {"message": "Welcome to the Run2Rejuvenate API"}
 
 # Health check endpoint
 @app.get("/health")
 async def health():
     return {"status": "ok"} 
+
+if __name__ == "__main__":
+    uvicorn.run(app, host="0.0.0.0", port=8000)

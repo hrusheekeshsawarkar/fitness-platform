@@ -22,6 +22,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Spinner } from "@/components/ui/spinner";
 
 interface Event {
   _id: string;
@@ -38,11 +40,13 @@ interface Event {
 export default function EventsPage() {
   const { user } = useAuth();
   const { toast } = useToast();
-  const [events, setEvents] = useState<Event[]>([]);
+  const [allEvents, setAllEvents] = useState<Event[]>([]);
   const [filteredEvents, setFilteredEvents] = useState<Event[]>([]);
   const [loading, setLoading] = useState(true);
   const [eventType, setEventType] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState<string>("");
+  const [sortBy, setSortBy] = useState<string>("start_date");
+  const [sortOrder, setSortOrder] = useState<string>("asc");
 
   useEffect(() => {
     const fetchEvents = async () => {
@@ -51,11 +55,11 @@ export default function EventsPage() {
         console.log("API Response:", response.data); // Debug log
         
         if (Array.isArray(response.data)) {
-          setEvents(response.data);
+          setAllEvents(response.data);
           setFilteredEvents(response.data);
         } else {
           console.log("Response is not an array:", response.data);
-          setEvents([]);
+          setAllEvents([]);
           setFilteredEvents([]);
         }
       } catch (error: any) {
@@ -65,7 +69,7 @@ export default function EventsPage() {
           description: "Failed to load events. Please try again later.",
           variant: "destructive",
         });
-        setEvents([]);
+        setAllEvents([]);
         setFilteredEvents([]);
       } finally {
         setLoading(false);
@@ -77,7 +81,7 @@ export default function EventsPage() {
 
   useEffect(() => {
     // Filter events based on search query and event type
-    let filtered = events;
+    let filtered = allEvents;
 
     if (searchQuery) {
       filtered = filtered.filter(
@@ -92,7 +96,7 @@ export default function EventsPage() {
     }
 
     setFilteredEvents(filtered);
-  }, [searchQuery, eventType, events]);
+  }, [searchQuery, eventType, allEvents]);
 
   const handleRegister = async (eventId: string) => {
     if (!user) {
@@ -117,7 +121,7 @@ export default function EventsPage() {
         (a: Event, b: Event) =>
           new Date(a.start_date).getTime() - new Date(b.start_date).getTime()
       );
-      setEvents(sortedEvents);
+      setAllEvents(sortedEvents);
     } catch (error: any) {
       toast({
         title: "Error",
@@ -137,90 +141,101 @@ export default function EventsPage() {
   };
 
   return (
-    <div className="container py-10">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8">
-        <div>
-          <h1 className="text-3xl font-bold mb-2">Events</h1>
-          <p className="text-muted-foreground">
-            Browse and register for fitness events
-          </p>
-        </div>
-        <div className="mt-4 md:mt-0">
-          <Select value={eventType} onValueChange={setEventType}>
-            <SelectTrigger className="w-[180px]">
-              <SelectValue placeholder="Filter by type" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Events</SelectItem>
-              <SelectItem value="running">Running</SelectItem>
-              <SelectItem value="cycling">Cycling</SelectItem>
-              <SelectItem value="swimming">Swimming</SelectItem>
-              <SelectItem value="triathlon">Triathlon</SelectItem>
-              <SelectItem value="other">Other</SelectItem>
-            </SelectContent>
-          </Select>
+    <div className="py-8">
+      <h1 className="text-3xl font-bold mb-8 text-center">Fitness Events</h1>
+      
+      <div className="mb-8 px-2">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div>
+            <Label htmlFor="eventType">Event Type</Label>
+            <Select value={eventType} onValueChange={setEventType}>
+              <SelectTrigger id="eventType">
+                <SelectValue placeholder="All Events" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Events</SelectItem>
+                <SelectItem value="running">Running</SelectItem>
+                <SelectItem value="cycling">Cycling</SelectItem>
+                <SelectItem value="walking">Walking</SelectItem>
+                <SelectItem value="swimming">Swimming</SelectItem>
+                <SelectItem value="other">Other</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          
+          <div>
+            <Label htmlFor="sortBy">Sort By</Label>
+            <Select value={sortBy} onValueChange={setSortBy}>
+              <SelectTrigger id="sortBy">
+                <SelectValue placeholder="Start Date" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="start_date">Start Date</SelectItem>
+                <SelectItem value="end_date">End Date</SelectItem>
+                <SelectItem value="target_distance">Target Distance</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          
+          <div>
+            <Label htmlFor="sortOrder">Sort Order</Label>
+            <Select value={sortOrder} onValueChange={setSortOrder}>
+              <SelectTrigger id="sortOrder">
+                <SelectValue placeholder="Ascending" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="asc">Ascending</SelectItem>
+                <SelectItem value="desc">Descending</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
         </div>
       </div>
-
+      
       {loading ? (
-        <div className="text-center py-10">Loading events...</div>
-      ) : filteredEvents.length === 0 ? (
-        <div className="text-center py-10">
-          <h2 className="text-xl font-semibold mb-2">No events found</h2>
-          <p className="text-muted-foreground mb-6">
-            There are no events matching your criteria at the moment.
-          </p>
+        <div className="text-center py-12">
+          <Spinner />
+          <p className="mt-2">Loading events...</p>
         </div>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      ) : filteredEvents.length > 0 ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8 px-2">
           {filteredEvents.map((event) => (
-            <Card key={event._id} className="flex flex-col h-full">
+            <Card key={event._id} className="h-full flex flex-col">
               <CardHeader>
                 <CardTitle>{event.name}</CardTitle>
                 <CardDescription>
                   {event.event_type.charAt(0).toUpperCase() + event.event_type.slice(1)}
                 </CardDescription>
               </CardHeader>
-              <CardContent className="flex-grow">
-                <p className="line-clamp-3 mb-4">{event.description}</p>
-                <div className="text-sm text-muted-foreground">
+              <CardContent className="flex-1">
+                <p className="line-clamp-3">{event.description}</p>
+                <div className="mt-4 text-sm">
                   <p>
-                    <strong>Start:</strong> {formatDate(event.start_date)}
+                    <strong>Start:</strong>{" "}
+                    {new Date(event.start_date).toLocaleDateString()}
                   </p>
                   <p>
-                    <strong>End:</strong> {formatDate(event.end_date)}
+                    <strong>End:</strong>{" "}
+                    {new Date(event.end_date).toLocaleDateString()}
                   </p>
                   {event.target_distance && (
                     <p>
                       <strong>Target Distance:</strong> {event.target_distance} km
                     </p>
                   )}
-                  {event.target_time && (
-                    <p>
-                      <strong>Target Time:</strong> {event.target_time} minutes
-                    </p>
-                  )}
-                  <p>
-                    <strong>Participants:</strong> {event.participants.length}
-                  </p>
                 </div>
               </CardContent>
               <CardFooter>
                 <Link href={`/events/${event._id}`} className="w-full">
                   <Button className="w-full">View Details</Button>
                 </Link>
-                {isRegistered(event) ? (
-                  <Button disabled variant="secondary" className="ml-2">
-                    Registered
-                  </Button>
-                ) : (
-                  <Button onClick={() => handleRegister(event._id)} className="ml-2">
-                    Register
-                  </Button>
-                )}
               </CardFooter>
             </Card>
           ))}
+        </div>
+      ) : (
+        <div className="text-center py-12">
+          <p>No events found matching your criteria.</p>
         </div>
       )}
     </div>

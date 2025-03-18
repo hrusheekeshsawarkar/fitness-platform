@@ -54,6 +54,7 @@ export default function ProgressUpdatePage() {
   const [distance, setDistance] = useState<number | "">("");
   const [time, setTime] = useState<number | "">("");
   const [notes, setNotes] = useState("");
+  const [date, setDate] = useState(new Date().toISOString().split('T')[0]); // Today's date in YYYY-MM-DD format
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
@@ -114,7 +115,8 @@ export default function ProgressUpdatePage() {
     // Validate form
     if (
       (event.target_distance && distance === "") ||
-      (event.target_time && time === "")
+      (event.target_time && time === "") ||
+      !date
     ) {
       toast({
         title: "Error",
@@ -132,30 +134,59 @@ export default function ProgressUpdatePage() {
         distance: distance || 0,
         time: time || 0,
         notes,
+        date,
       };
       
-      await api.post("/progress", progressData);
+      console.log("Sending progress data:", progressData);
       
-      toast({
-        title: "Success",
-        description: "Your progress has been updated successfully",
-      });
-      
-      // Reset form
-      setDistance("");
-      setTime("");
-      setNotes("");
-      
-      // Refresh progress data
-      const progressResponse = await api.get(`/progress/event/${id}`);
-      if (Array.isArray(progressResponse.data)) {
-        setProgress(progressResponse.data);
+      // Add try-catch with detailed error logging
+      try {
+        const response = await api.post("/progress", progressData);
+        console.log("Progress update response:", response.data);
+        
+        toast({
+          title: "Success",
+          description: "Your progress has been updated successfully",
+        });
+        
+        // Reset form
+        setDistance("");
+        setTime("");
+        setNotes("");
+        setDate(new Date().toISOString().split('T')[0]); // Reset to today
+        
+        // Refresh progress data
+        const progressResponse = await api.get(`/progress/event/${id}`);
+        if (Array.isArray(progressResponse.data)) {
+          setProgress(progressResponse.data);
+        }
+      } catch (apiError: any) {
+        console.error("API Error details:", {
+          status: apiError.response?.status,
+          statusText: apiError.response?.statusText,
+          data: apiError.response?.data,
+          headers: apiError.response?.headers,
+        });
+        
+        // Try to give a more helpful error message based on the specific error
+        let errorMessage = "Failed to update progress";
+        if (apiError.response?.data?.detail) {
+          errorMessage = apiError.response.data.detail;
+        } else if (apiError.response?.data?.msg) {
+          errorMessage = apiError.response.data.msg;
+        }
+        
+        toast({
+          title: "Error",
+          description: errorMessage,
+          variant: "destructive",
+        });
       }
     } catch (error: any) {
       console.error("Error updating progress:", error);
       toast({
         title: "Error",
-        description: error.response?.data?.detail || "Failed to update progress",
+        description: "An unexpected error occurred",
         variant: "destructive",
       });
     } finally {
@@ -252,6 +283,17 @@ export default function ProgressUpdatePage() {
             </CardHeader>
             <CardContent>
               <form onSubmit={handleSubmit} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="date">Date</Label>
+                  <Input
+                    id="date"
+                    type="date"
+                    value={date}
+                    onChange={(e) => setDate(e.target.value)}
+                    required
+                  />
+                </div>
+                
                 {event.target_distance && (
                   <div className="space-y-2">
                     <Label htmlFor="distance">Distance (km)</Label>
@@ -360,7 +402,7 @@ export default function ProgressUpdatePage() {
                         <div className="flex justify-between items-start">
                           <div>
                             <p className="text-sm font-medium">
-                              {new Date(p.date).toLocaleDateString()}
+                              {p.date ? new Date(p.date).toLocaleDateString() : "Invalid Date"}
                             </p>
                             {p.distance > 0 && (
                               <p className="text-sm">Distance: {p.distance} km</p>

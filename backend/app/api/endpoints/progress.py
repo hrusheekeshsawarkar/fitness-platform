@@ -20,7 +20,7 @@ async def create_progress(
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     
-    # Set the user ID
+    # Set the user ID - always override with the authenticated user's ID
     progress.user_id = str(user.id)
     
     return await ProgressService.create_progress(progress)
