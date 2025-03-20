@@ -11,6 +11,11 @@ const inter = Inter({ subsets: ["latin"] });
 export const metadata: Metadata = {
   title: "Run2Rejuvenate",
   description: "A platform for fitness events and competitions",
+  icons: {
+    icon: '/r2r_logo.jpg',
+    shortcut: '/r2r_logo.jpg',
+    apple: '/r2r_logo.jpg',
+  },
 };
 
 export default function RootLayout({
