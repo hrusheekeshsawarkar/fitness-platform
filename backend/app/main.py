@@ -1,9 +1,15 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+import os
 from app.core.config import settings
 from app.api.api import api_router
 from app.db.mongodb import connect_to_mongodb, close_mongodb_connection
 import uvicorn
+
+# Create uploads directory if it doesn't exist
+os.makedirs("uploads", exist_ok=True)
+os.makedirs("uploads/photos", exist_ok=True)
 
 # Create FastAPI app
 app = FastAPI(
@@ -14,11 +20,14 @@ app = FastAPI(
 # Set up CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # In production, replace with specific origins
+    allow_origins=["*"],  # Allows all origins
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["*"],  # Allows all methods
+    allow_headers=["*"],  # Allows all headers
 )
+
+# Mount static files directory for uploads
+app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
 
 # Include API router
 app.include_router(api_router, prefix=settings.API_V1_STR)

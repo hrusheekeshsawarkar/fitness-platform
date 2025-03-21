@@ -44,3 +44,4 @@ firebase-credentials.json
 *.swo
 *~
 .DS_Store 
+backend/uploads/

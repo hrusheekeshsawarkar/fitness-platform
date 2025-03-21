@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import {
@@ -30,6 +31,12 @@ export default function Home() {
   const [featuredEvents, setFeaturedEvents] = useState<Event[]>([]);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
+  const router = useRouter();
+
+  useEffect(() => {
+    // Redirect to welcome page
+    router.push('/welcome');
+  }, [router]);
 
   useEffect(() => {
     const fetchEvents = async () => {
@@ -68,7 +75,7 @@ export default function Home() {
       {/* Welcome Section */}
       <section className="text-center mb-16 px-4">
         <h1 className="text-4xl font-bold mb-4">Welcome to Run2Rejuvenate</h1>
-        <h3 className="text-2xl text-muted-foreground mb-12 max-w-3xl mx-auto">Let's build, enjoy and celebrate Fitness together</h3>
+        <h3 className="text-2xl text-muted-foreground mb-12 max-w-3xl mx-auto">Let's build, enjoy and celebrate Fitness together</h3>
         <p className="text-l text-muted-foreground mb-8 max-w-3xl mx-auto">
           Join fitness events, compete with others, and track your progress to
           achieve your fitness goals.

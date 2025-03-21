@@ -47,7 +47,7 @@ export function Header() {
     <header className="border-b relative z-50">
       <div className="container flex h-16 items-center justify-between px-4 md:px-6 lg:px-8">
         <div className="flex items-center gap-6">
-          <Link href="/" className="flex items-center">
+          <Link href="/welcome" className="flex items-center">
             <Image 
               src="/r2r_logo.jpg" 
               alt="Run2Rejuvenate Logo" 
@@ -64,6 +64,7 @@ export function Header() {
             <Link href="/stories" className={navLinkClasses('/stories')}>Our Stories</Link>
             <Link href="/articles" className={navLinkClasses('/articles')}>Articles</Link>
             <Link href="/events" className={navLinkClasses('/events')}>Events for You</Link>
+            <Link href="/memories" className={navLinkClasses('/memories')}>Memories</Link>
             {user && <Link href="/my-events" className={navLinkClasses('/my-events')}>My Events</Link>}
             {user?.customClaims?.admin && (
               <>
@@ -183,6 +184,13 @@ export function Header() {
                 onClick={closeMobileMenu}
               >
                 Events for You
+              </Link>
+              <Link 
+                href="/memories" 
+                className={cn("text-lg py-2 px-4", isActive('/memories') ? "font-medium text-primary" : "")}
+                onClick={closeMobileMenu}
+              >
+                Memories
               </Link>
               {user && (
                 <Link 

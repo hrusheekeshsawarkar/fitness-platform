@@ -1,0 +1,60 @@
+/* React Day Picker styles */
+.rdp {
+  --rdp-cell-size: 40px;
+  --rdp-accent-color: #0063FF; 
+  --rdp-background-color: rgba(0, 99, 255, 0.1);
+  --rdp-accent-color-dark: #0063FF;
+  --rdp-background-color-dark: rgba(0, 99, 255, 0.3);
+  margin: 0;
+}
+
+.rdp-day_selected, 
+.rdp-day_selected:focus-visible, 
+.rdp-day_selected:hover {
+  background-color: var(--rdp-accent-color);
+  color: white;
+}
+
+.rdp-day_today {
+  font-weight: bold;
+  color: var(--rdp-accent-color);
+}
+
+.rdp-button:hover:not([disabled]):not(.rdp-day_selected) {
+  background-color: var(--rdp-background-color);
+}
+
+.rdp-caption {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0;
+  text-align: left;
+}
+
+.rdp-caption_label {
+  font-weight: 600;
+  font-size: 1rem;
+}
+
+.rdp-nav {
+  display: flex;
+  align-items: center;
+}
+
+.rdp-head_cell {
+  font-weight: 600;
+  font-size: 0.875rem;
+  color: #666;
+}
+
+.rdp-tbody {
+  font-size: 0.875rem;
+}
+
+/* Make the calendar match the UI style */
+.rdp-month {
+  background-color: white;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+} 

@@ -3,7 +3,7 @@
 import axios from 'axios';
 import { auth } from './firebase';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5005/api/v1';
 
 const api = axios.create({
   baseURL: API_URL,
@@ -124,6 +124,40 @@ export const userApi = {
   },
   createUser: async (userData: any) => {
     const response = await api.post('/users', userData);
+    return response.data;
+  },
+};
+
+// API functions for photos
+export const photoApi = {
+  getPhotos: async (page = 1, limit = 10) => {
+    const skip = (page - 1) * limit;
+    const response = await api.get(`/photos?skip=${skip}&limit=${limit}`);
+    return response.data;
+  },
+  getPhoto: async (id: string) => {
+    const response = await api.get(`/photos/${id}`);
+    return response.data;
+  },
+  uploadPhoto: async (formData: FormData) => {
+    const response = await api.post('/photos/', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    return response.data;
+  },
+  deletePhoto: async (id: string) => {
+    try {
+      const response = await api.delete(`/photos/${id}`);
+      return response.data;
+    } catch (error) {
+      console.error("Error deleting photo:", error);
+      throw error;
+    }
+  },
+  updatePhoto: async (id: string, photoData: any) => {
+    const response = await api.put(`/photos/${id}`, photoData);
     return response.data;
   },
 };

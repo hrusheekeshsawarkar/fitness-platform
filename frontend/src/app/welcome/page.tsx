@@ -10,11 +10,11 @@ export default function WelcomePage() {
     <div className="py-8">
       <div className="max-w-4xl mx-auto">
         <div className="mb-8">
-          <h1 className="text-4xl font-bold mb-6">Welcome to Run2Rejuvenate</h1>
+          <h1 className="text-4xl font-bold mb-6">Welcome to Run2Rejuvenate (R2R)</h1>
           
           <div className="relative w-full h-[300px] rounded-lg overflow-hidden mb-6">
             <Image 
-              src="/r2r_logo.jpg"
+              src="/group_photo.jpg"
               alt="Run2Rejuvenate Hero" 
               fill
               style={{objectFit: 'cover'}}
@@ -22,7 +22,7 @@ export default function WelcomePage() {
             />
             <div className="absolute inset-0 bg-gradient-to-b from-transparent to-black/60 flex items-end">
               <div className="p-6 text-white">
-                <h2 className="text-2xl font-bold">Run to Heal. Run to Feel. Run to Become Real.</h2>
+                <h2 className="text-2xl font-bold">Your Place of Choice to Stay Fit, Healthy and Happy!</h2>
               </div>
             </div>
           </div>
