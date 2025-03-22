@@ -6,6 +6,34 @@ from app.services.user_service import UserService
 
 router = APIRouter()
 
+@router.get("/check-email", status_code=status.HTTP_200_OK)
+async def check_user_exists(
+    email: str
+):
+    """
+    Check if a user with the given email exists.
+    """
+    user = await UserService.get_user_by_email(email)
+    return {"exists": user is not None}
+
+@router.post("/register", response_model=User, status_code=status.HTTP_201_CREATED)
+async def register_user(
+    user: UserCreate
+):
+    """
+    Register a new user with detailed profile information.
+    This endpoint is used during the registration process.
+    """
+    try:
+        return await UserService.create_user(user)
+    except HTTPException as e:
+        raise e
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e)
+        )
+
 @router.post("/", response_model=User, status_code=status.HTTP_201_CREATED)
 async def create_user(
     user: UserCreate,
@@ -36,13 +64,47 @@ async def get_current_user_info(
     """
     user = await UserService.get_user_by_firebase_uid(current_user["uid"])
     if not user:
-        # If user doesn't exist in our database, create a new one
-        new_user = UserCreate(
-            firebase_uid=current_user["uid"],
-            email=current_user["email"],
-            is_admin=current_user.get("is_admin", False)
+        # For existing users that were created before the detailed registration,
+        # We'll need to redirect them to complete their profile
+        # Just create a minimal user record for now
+        email = current_user.get("email", "")
+        display_name = current_user.get("name", "")
+        
+        # Try to split display name into first and last name
+        name_parts = display_name.split(" ", 1) if display_name else ["", ""]
+        first_name = name_parts[0]
+        last_name = name_parts[1] if len(name_parts) > 1 else ""
+        
+        try:
+            new_user = UserCreate(
+                firebase_uid=current_user["uid"],
+                email=email,
+                first_name=first_name,
+                last_name=last_name,
+                full_name=display_name,
+                is_admin=current_user.get("is_admin", False),
+                contact_number="",  # Empty as a placeholder
+                age_category="",    # Empty as a placeholder
+                city="",            # Empty as a placeholder
+                state="",           # Empty as a placeholder
+                country=""          # Empty as a placeholder
+            )
+            user = await UserService.create_user(new_user)
+        except Exception as e:
+            # If user creation fails, just return the error
+            # so the frontend can prompt them to complete registration
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Please complete your registration by providing additional details"
+            )
+    
+    # If the user doesn't have all required profile fields filled out,
+    # we should indicate they need to complete their profile
+    if not user.first_name or not user.last_name or not user.contact_number or not user.age_category or not user.city or not user.state or not user.country:
+        raise HTTPException(
+            status_code=status.HTTP_428_PRECONDITION_REQUIRED,
+            detail="Please complete your profile with additional details"
         )
-        user = await UserService.create_user(new_user)
     
     return user
 
