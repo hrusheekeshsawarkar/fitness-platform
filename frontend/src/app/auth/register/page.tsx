@@ -11,16 +11,25 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/components/ui/use-toast";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { toast as sonnerToast } from "sonner";
 
 // Create a function to check if user exists by email
 async function checkUserExists(email: string): Promise<boolean> {
   try {
+    console.log(`Checking if user exists: ${email}`);
+    // Make sure we're using the correct API endpoint path
     const response = await fetch(`/api/users/check-email?email=${encodeURIComponent(email)}`);
+    
+    console.log(`Response status: ${response.status}`);
     
     if (response.ok) {
       const data = await response.json();
-      return data.exists;
+      console.log(`User exists response data:`, data);
+      // Log the exact value being returned
+      console.log(`Returning exists value: ${data.exists}`);
+      return Boolean(data.exists); // Ensure we return a boolean
     }
+    console.log(`Response not OK: ${response.statusText}`);
     return false;
   } catch (error) {
     console.error("Error checking user:", error);
@@ -63,6 +72,7 @@ export default function RegisterPage() {
   const [state, setState] = useState("");
   const [country, setCountry] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
   const router = useRouter();
   const { toast } = useToast();
 
@@ -110,6 +120,7 @@ export default function RegisterPage() {
   // Handle registration with email and password
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
+    setErrorMessage("");
     
     if (!validateForm()) return;
     
@@ -117,13 +128,24 @@ export default function RegisterPage() {
       setIsLoading(true);
       
       // Check if user with this email already exists
+      console.log(`Checking if email exists: ${email}`);
       const exists = await checkUserExists(email);
+      console.log(`Email exists check result: ${exists}`);
+      
       if (exists) {
+        console.log('Email already exists, showing error message');
+        // Set visible error message
+        setErrorMessage("An account with this email already exists");
+        
+        // Use both toast systems
         toast({
           title: "Error",
           description: "An account with this email already exists",
           variant: "destructive",
         });
+        
+        // Also use sonner toast
+        sonnerToast.error("An account with this email already exists");
         return;
       }
       
@@ -177,6 +199,13 @@ export default function RegisterPage() {
         </CardHeader>
         <CardContent>
           <form onSubmit={handleRegister} className="space-y-6">
+            {/* Show error message if it exists */}
+            {errorMessage && (
+              <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative">
+                <strong className="font-bold">Error: </strong>
+                <span className="block sm:inline">{errorMessage}</span>
+              </div>
+            )}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="firstName">First Name</Label>
