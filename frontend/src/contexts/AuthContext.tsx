@@ -10,17 +10,34 @@ import {
   onIdTokenChanged
 } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
+import axios from 'axios';
+
+// Extended user profile data from backend
+interface UserProfile {
+  id: string;
+  email: string;
+  first_name: string;
+  last_name: string;
+  full_name: string;
+  firebase_uid: string;
+  bib_number: string;
+  age_category?: string;
+  contact_number?: string;
+  city?: string;
+  state?: string;
+  country?: string;
+}
 
 interface CustomUser extends User {
   customClaims?: {
     admin?: boolean;
   };
+  profile?: UserProfile;
 }
 
 interface AuthContextType {
   user: CustomUser | null;
   loading: boolean;
-  signInWithGoogle: () => Promise<void>;
   signInWithEmail: (email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
 }
@@ -31,16 +48,49 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<CustomUser | null>(null);
   const [loading, setLoading] = useState(true);
 
+  // Function to fetch user profile from backend
+  const fetchUserProfile = async (firebaseUser: User) => {
+    try {
+      const token = await firebaseUser.getIdToken();
+      const apiUrl = `${process.env.NEXT_PUBLIC_API_URL}/users/me`;
+      console.log("Fetching user profile from:", apiUrl);
+      
+      const response = await axios.get(apiUrl, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+      
+      console.log("User profile data:", response.data);
+      return response.data;
+    } catch (error) {
+      console.error("Error fetching user profile:", error);
+      if (axios.isAxiosError(error)) {
+        console.error("API Error details:", {
+          status: error.response?.status,
+          data: error.response?.data,
+          url: error.config?.url
+        });
+      }
+      return null;
+    }
+  };
+
   useEffect(() => {
-    const unsubscribe = onIdTokenChanged(auth, async (user) => {
-      if (user) {
+    const unsubscribe = onIdTokenChanged(auth, async (firebaseUser) => {
+      if (firebaseUser) {
         // Get the ID token and decode it to access custom claims
-        const token = await user.getIdTokenResult();
+        const token = await firebaseUser.getIdTokenResult();
+        
+        // Fetch user profile from backend
+        const profile = await fetchUserProfile(firebaseUser);
+        
         const customUser: CustomUser = {
-          ...user,
+          ...firebaseUser,
           customClaims: {
             admin: token.claims.admin as boolean,
           },
+          profile: profile
         };
         setUser(customUser);
       } else {
@@ -52,6 +102,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => unsubscribe();
   }, []);
 
+  // Keep this function for internal use only
   const signInWithGoogle = async () => {
     try {
       const provider = new GoogleAuthProvider();
@@ -85,7 +136,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       value={{
         user,
         loading,
-        signInWithGoogle,
         signInWithEmail,
         signOut,
       }}

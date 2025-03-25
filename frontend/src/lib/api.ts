@@ -126,6 +126,14 @@ export const userApi = {
     const response = await api.post('/users', userData);
     return response.data;
   },
+  checkUserExists: async (email: string) => {
+    const response = await api.get(`/users/check-email?email=${encodeURIComponent(email)}`);
+    return response.data;
+  },
+  registerUser: async (userData: any) => {
+    const response = await api.post('/users/register', userData);
+    return response.data;
+  },
 };
 
 // API functions for photos

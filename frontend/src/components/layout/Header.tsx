@@ -7,6 +7,7 @@ import { usePathname } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Tooltip } from '@/components/ui/tooltip';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -84,32 +85,58 @@ export function Header() {
           {user ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="relative h-8 w-8 rounded-full">
-                  <Avatar className="h-8 w-8">
-                    <AvatarImage src={user.photoURL || ""} alt={user.email || ""} />
-                    <AvatarFallback>{user.email?.charAt(0).toUpperCase()}</AvatarFallback>
-                  </Avatar>
-                </Button>
+                <div>
+                  {user.profile?.bib_number ? (
+                    <Tooltip content={`BIB: ${user.profile.bib_number}`}>
+                      <Button variant="ghost" className="relative h-8 w-8 rounded-full">
+                        <Avatar className="h-8 w-8">
+                          <AvatarImage src={user.photoURL || ""} alt={user.email || ""} />
+                          <AvatarFallback>{user.email?.charAt(0).toUpperCase()}</AvatarFallback>
+                        </Avatar>
+                      </Button>
+                    </Tooltip>
+                  ) : (
+                    <Button variant="ghost" className="relative h-8 w-8 rounded-full">
+                      <Avatar className="h-8 w-8">
+                        <AvatarImage src={user.photoURL || ""} alt={user.email || ""} />
+                        <AvatarFallback>{user.email?.charAt(0).toUpperCase()}</AvatarFallback>
+                      </Avatar>
+                    </Button>
+                  )}
+                </div>
               </DropdownMenuTrigger>
               <DropdownMenuContent className="w-56" align="end" forceMount>
                 <DropdownMenuLabel className="font-normal">
                   <div className="flex flex-col space-y-1">
                     <p className="text-sm font-medium leading-none">{user.email}</p>
+                    {user.profile?.bib_number && (
+                      <p className="text-xs leading-none text-green-600">BIB: {user.profile.bib_number}</p>
+                    )}
                     {user.customClaims?.admin && (
                       <p className="text-xs leading-none text-blue-600">Administrator</p>
                     )}
                   </div>
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
+                {/* <DropdownMenuItem asChild>
+                  <Link href="/profile" className="w-full cursor-pointer">
+                    My Profile
+                  </Link>
+                </DropdownMenuItem> */}
                 <DropdownMenuItem onClick={() => signOut()}>
                   Sign out
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           ) : (
-            <Link href="/auth/login" className="hidden sm:block">
-              <Button>Sign In</Button>
-            </Link>
+            <div className="hidden sm:flex items-center gap-2">
+              <Link href="/auth/register">
+                <Button variant="secondary">Join Us</Button>
+              </Link>
+              <Link href="/auth/login">
+                <Button>Sign In</Button>
+              </Link>
+            </div>
           )}
           
           {/* Mobile Menu Button */}
@@ -220,13 +247,22 @@ export function Header() {
                 </>
               )}
               {!user && (
-                <Link 
-                  href="/auth/login" 
-                  className="mt-6 w-full max-w-xs"
-                  onClick={closeMobileMenu}
-                >
-                  <Button size="lg" className="w-full">Sign In</Button>
-                </Link>
+                <>
+                  <Link 
+                    href="/auth/register" 
+                    className="mt-6 w-full max-w-xs"
+                    onClick={closeMobileMenu}
+                  >
+                    <Button variant="secondary" size="lg" className="w-full">Join Us</Button>
+                  </Link>
+                  <Link 
+                    href="/auth/login" 
+                    className="mt-2 w-full max-w-xs"
+                    onClick={closeMobileMenu}
+                  >
+                    <Button size="lg" className="w-full">Sign In</Button>
+                  </Link>
+                </>
               )}
               
               <Button 

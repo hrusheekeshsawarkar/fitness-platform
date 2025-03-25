@@ -7,18 +7,20 @@ from app.services.user_service import UserService
 from bson import ObjectId
 import logging
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from app.db.mongodb import events_collection
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
 
 # Public endpoint for listing events - optional authentication
 @router.get("/", response_model=List[Event])
-async def get_events(user = Depends(get_optional_user)):
+async def get_events(
+    skip: int = 0,
+    limit: int = 100,
+    user = Depends(get_optional_user)
+):
     """Get all events. This endpoint is public and doesn't require authentication."""
     try:
-        events = await events_collection.find().to_list(1000)
-        return events
+        return await EventService.get_events(skip, limit)
     except Exception as e:
         logger.error(f"Error fetching events: {str(e)}")
         raise HTTPException(
@@ -32,11 +34,8 @@ async def create_event(event: EventCreate, user = Depends(get_admin_user)):
     try:
         event_dict = event.dict()
         event_dict["created_by"] = user["uid"]
-        event_dict["participants"] = []
         
-        result = await events_collection.insert_one(event_dict)
-        
-        created_event = await events_collection.find_one({"_id": result.inserted_id})
+        created_event = await EventService.create_event(event)
         return created_event
     except Exception as e:
         logger.error(f"Error creating event: {str(e)}")
@@ -49,10 +48,7 @@ async def create_event(event: EventCreate, user = Depends(get_admin_user)):
 async def get_event(event_id: str, user = Depends(get_optional_user)):
     """Get a specific event by ID. This endpoint is public."""
     try:
-        if not ObjectId.is_valid(event_id):
-            raise HTTPException(status_code=400, detail="Invalid event ID format")
-        
-        event = await events_collection.find_one({"_id": ObjectId(event_id)})
+        event = await EventService.get_event(event_id)
         if not event:
             raise HTTPException(status_code=404, detail="Event not found")
         
@@ -70,22 +66,10 @@ async def get_event(event_id: str, user = Depends(get_optional_user)):
 async def update_event(event_id: str, event_update: EventUpdate, user = Depends(get_admin_user)):
     """Update an event. Only admin users can update events."""
     try:
-        if not ObjectId.is_valid(event_id):
-            raise HTTPException(status_code=400, detail="Invalid event ID format")
-        
-        event = await events_collection.find_one({"_id": ObjectId(event_id)})
-        if not event:
+        updated_event = await EventService.update_event(event_id, event_update)
+        if not updated_event:
             raise HTTPException(status_code=404, detail="Event not found")
         
-        update_data = {k: v for k, v in event_update.dict(exclude_unset=True).items() if v is not None}
-        
-        if update_data:
-            await events_collection.update_one(
-                {"_id": ObjectId(event_id)},
-                {"$set": update_data}
-            )
-        
-        updated_event = await events_collection.find_one({"_id": ObjectId(event_id)})
         return updated_event
     except HTTPException:
         raise
@@ -100,14 +84,10 @@ async def update_event(event_id: str, event_update: EventUpdate, user = Depends(
 async def delete_event(event_id: str, user = Depends(get_admin_user)):
     """Delete an event. Only admin users can delete events."""
     try:
-        if not ObjectId.is_valid(event_id):
-            raise HTTPException(status_code=400, detail="Invalid event ID format")
-        
-        event = await events_collection.find_one({"_id": ObjectId(event_id)})
-        if not event:
+        deleted = await EventService.delete_event(event_id)
+        if not deleted:
             raise HTTPException(status_code=404, detail="Event not found")
         
-        await events_collection.delete_one({"_id": ObjectId(event_id)})
         return None
     except HTTPException:
         raise
@@ -122,22 +102,17 @@ async def delete_event(event_id: str, user = Depends(get_admin_user)):
 async def register_for_event(event_id: str, user = Depends(get_current_user)):
     """Register the current user for an event."""
     try:
-        if not ObjectId.is_valid(event_id):
-            raise HTTPException(status_code=400, detail="Invalid event ID format")
+        # Get the user from the database
+        db_user = await UserService.get_user_by_firebase_uid(user["uid"])
+        if not db_user:
+            raise HTTPException(status_code=404, detail="User not found")
         
-        event = await events_collection.find_one({"_id": ObjectId(event_id)})
-        if not event:
+        updated_event = await EventService.register_participant(event_id, str(db_user.id))
+        if not updated_event:
             raise HTTPException(status_code=404, detail="Event not found")
         
-        # Check if user is already registered
-        if user["uid"] in event.get("participants", []):
-            raise HTTPException(status_code=400, detail="User is already registered for this event")
-        
-        # Add user to participants
-        await events_collection.update_one(
-            {"_id": ObjectId(event_id)},
-            {"$addToSet": {"participants": user["uid"]}}
-        )
+        # Also update the user's registered events
+        await UserService.add_event_to_user(str(db_user.id), event_id)
         
         return {"message": "Successfully registered for event"}
     except HTTPException:
@@ -153,22 +128,17 @@ async def register_for_event(event_id: str, user = Depends(get_current_user)):
 async def unregister_from_event(event_id: str, user = Depends(get_current_user)):
     """Unregister the current user from an event."""
     try:
-        if not ObjectId.is_valid(event_id):
-            raise HTTPException(status_code=400, detail="Invalid event ID format")
+        # Get the user from the database
+        db_user = await UserService.get_user_by_firebase_uid(user["uid"])
+        if not db_user:
+            raise HTTPException(status_code=404, detail="User not found")
         
-        event = await events_collection.find_one({"_id": ObjectId(event_id)})
-        if not event:
+        updated_event = await EventService.unregister_participant(event_id, str(db_user.id))
+        if not updated_event:
             raise HTTPException(status_code=404, detail="Event not found")
         
-        # Check if user is registered
-        if user["uid"] not in event.get("participants", []):
-            raise HTTPException(status_code=400, detail="User is not registered for this event")
-        
-        # Remove user from participants
-        await events_collection.update_one(
-            {"_id": ObjectId(event_id)},
-            {"$pull": {"participants": user["uid"]}}
-        )
+        # Also update the user's registered events
+        await UserService.remove_event_from_user(str(db_user.id), event_id)
         
         return {"message": "Successfully unregistered from event"}
     except HTTPException:

@@ -13,7 +13,7 @@ class EventService:
     @classmethod
     async def create_event(cls, event: EventCreate) -> Event:
         """Create a new event."""
-        db = get_database()
+        db = await get_database()
         event_dict = event.dict()
         event_dict["created_at"] = datetime.utcnow()
         event_dict["participants"] = []
@@ -26,7 +26,7 @@ class EventService:
     @classmethod
     async def get_event(cls, event_id: str) -> Optional[Event]:
         """Get an event by ID."""
-        db = get_database()
+        db = await get_database()
         if not ObjectId.is_valid(event_id):
             raise HTTPException(status_code=400, detail="Invalid event ID format")
             
@@ -38,7 +38,7 @@ class EventService:
     @classmethod
     async def get_events(cls, skip: int = 0, limit: int = 100) -> List[Event]:
         """Get all events with pagination."""
-        db = get_database()
+        db = await get_database()
         events = []
         cursor = db[cls.collection_name].find().skip(skip).limit(limit)
         async for event in cursor:
@@ -48,7 +48,7 @@ class EventService:
     @classmethod
     async def update_event(cls, event_id: str, event_update: EventUpdate) -> Optional[Event]:
         """Update an event."""
-        db = get_database()
+        db = await get_database()
         if not ObjectId.is_valid(event_id):
             raise HTTPException(status_code=400, detail="Invalid event ID format")
             
@@ -73,7 +73,7 @@ class EventService:
     @classmethod
     async def delete_event(cls, event_id: str) -> bool:
         """Delete an event."""
-        db = get_database()
+        db = await get_database()
         if not ObjectId.is_valid(event_id):
             raise HTTPException(status_code=400, detail="Invalid event ID format")
             
@@ -83,7 +83,7 @@ class EventService:
     @classmethod
     async def register_participant(cls, event_id: str, user_id: str) -> Optional[Event]:
         """Register a participant for an event."""
-        db = get_database()
+        db = await get_database()
         if not ObjectId.is_valid(event_id):
             raise HTTPException(status_code=400, detail="Invalid event ID format")
             
@@ -111,7 +111,7 @@ class EventService:
     @classmethod
     async def unregister_participant(cls, event_id: str, user_id: str) -> Optional[Event]:
         """Unregister a participant from an event."""
-        db = get_database()
+        db = await get_database()
         if not ObjectId.is_valid(event_id):
             raise HTTPException(status_code=400, detail="Invalid event ID format")
             
@@ -135,7 +135,7 @@ class EventService:
     @classmethod
     async def get_user_events(cls, user_id: str) -> List[Event]:
         """Get all events a user is registered for."""
-        db = get_database()
+        db = await get_database()
         events = []
         cursor = db[cls.collection_name].find({"participants": user_id})
         async for event in cursor:

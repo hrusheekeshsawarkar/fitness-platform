@@ -15,7 +15,7 @@ class ProgressService:
     @classmethod
     async def create_progress(cls, progress: ProgressCreate) -> Progress:
         """Create a new progress entry."""
-        db = get_database()
+        db = await get_database()
         
         # Ensure user_id is set
         if not progress.user_id:
@@ -47,7 +47,7 @@ class ProgressService:
     @classmethod
     async def get_progress(cls, progress_id: str) -> Optional[Progress]:
         """Get a progress entry by ID."""
-        db = get_database()
+        db = await get_database()
         if not ObjectId.is_valid(progress_id):
             raise HTTPException(status_code=400, detail="Invalid progress ID format")
             
@@ -59,7 +59,7 @@ class ProgressService:
     @classmethod
     async def update_progress(cls, progress_id: str, progress_update: ProgressUpdate) -> Optional[Progress]:
         """Update a progress entry."""
-        db = get_database()
+        db = await get_database()
         if not ObjectId.is_valid(progress_id):
             raise HTTPException(status_code=400, detail="Invalid progress ID format")
             
@@ -84,7 +84,7 @@ class ProgressService:
     @classmethod
     async def delete_progress(cls, progress_id: str) -> bool:
         """Delete a progress entry."""
-        db = get_database()
+        db = await get_database()
         if not ObjectId.is_valid(progress_id):
             raise HTTPException(status_code=400, detail="Invalid progress ID format")
             
@@ -94,7 +94,7 @@ class ProgressService:
     @classmethod
     async def get_user_progress(cls, user_id: str, event_id: Optional[str] = None) -> List[Progress]:
         """Get all progress entries for a user, optionally filtered by event."""
-        db = get_database()
+        db = await get_database()
         query = {"user_id": user_id}
         
         if event_id:
@@ -111,7 +111,7 @@ class ProgressService:
     @classmethod
     async def get_event_progress(cls, event_id: str) -> List[Progress]:
         """Get all progress entries for an event."""
-        db = get_database()
+        db = await get_database()
         if not ObjectId.is_valid(event_id):
             raise HTTPException(status_code=400, detail="Invalid event ID format")
             
@@ -124,7 +124,7 @@ class ProgressService:
     @classmethod
     async def get_leaderboard(cls, event_id: str) -> List[Dict[str, Any]]:
         """Get leaderboard for an event."""
-        db = get_database()
+        db = await get_database()
         if not ObjectId.is_valid(event_id):
             raise HTTPException(status_code=400, detail="Invalid event ID format")
             
