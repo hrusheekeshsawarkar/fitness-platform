@@ -3,6 +3,7 @@ from fastapi import APIRouter, Depends, HTTPException, status, Query
 from app.core.firebase_auth import get_current_user, get_admin_user
 from app.models.user import User, UserCreate, UserUpdate
 from app.services.user_service import UserService
+from app.db.mongodb import get_database
 
 router = APIRouter()
 
@@ -13,8 +14,23 @@ async def check_user_exists(
     """
     Check if a user with the given email exists.
     """
-    user = await UserService.get_user_by_email(email)
-    return {"exists": user is not None}
+    try:
+        user = await UserService.get_user_by_email(email)
+        
+        # If the user exists in the database but has missing fields,
+        # we should still report them as existing so they can complete their profile
+        if user is None:
+            # Double-check directly with the database
+            db = await get_database()
+            user_doc = await db[UserService.collection_name].find_one({"email": email})
+            return {"exists": user_doc is not None}
+            
+        return {"exists": True}
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error checking user existence: {str(e)}"
+        )
 
 @router.post("/register", response_model=User, status_code=status.HTTP_201_CREATED)
 async def register_user(

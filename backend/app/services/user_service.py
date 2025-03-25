@@ -69,7 +69,13 @@ class UserService:
         db = await get_database()
         user = await db[cls.collection_name].find_one({"email": email})
         if user:
-            return User(**user)
+            try:
+                return User(**user)
+            except Exception as e:
+                # If validation fails, return None instead of raising an error
+                # This way, the check-email endpoint can still return that the user exists
+                # but the /me endpoint will handle profile completion properly
+                return None
         return None
     
     @classmethod
