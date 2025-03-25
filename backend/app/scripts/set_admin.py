@@ -8,7 +8,7 @@ def set_admin_claim(user_email: str):
     try:
         # Initialize Firebase Admin SDK if not already initialized
         if not firebase_admin._apps:
-            cred_path = os.path.join(os.path.dirname(__file__), '..', '..', 'firebase-admin-sdk.json')
+            cred_path = os.path.join(os.path.dirname(__file__), '..', '..', 'firebase-credentials.json')
             cred = credentials.Certificate(cred_path)
             firebase_admin.initialize_app(cred)
         
